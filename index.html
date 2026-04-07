@@ -54,6 +54,10 @@ html, body {
   opacity: 1;
   pointer-events: all;
 }
+/* Sub pages: let inner div own the scroll — don't clip it */
+.sub-page {
+  overflow: visible;
+}
 
 /* =============================================
    BACK BUTTON — left edge, vertically centered
@@ -220,6 +224,7 @@ html, body {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  touch-action: pan-y;
   display: flex;
   flex-direction: column;
 }
@@ -430,8 +435,12 @@ html, body {
   position: absolute;
   inset: 0;
   overflow-y: scroll;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   scrollbar-width: none;
+  /* explicit height so iOS recognises scroll container */
+  height: 100%;
 }
 .sub-inner::-webkit-scrollbar { display: none; }
 .scroll-driver { position: relative; }
@@ -831,14 +840,15 @@ function sizeProto() {
       el.style.height = vSize + 'px';
     });
   });
-  // Resize scroll scrub geometry
+  // Resize scroll scrub geometry — set synchronously so iOS sees correct scrollHeight
   for (let i = 1; i <= 3; i++) {
     const inner = document.getElementById('sub-inner-' + i);
     const sw    = document.getElementById('sw-' + i);
     const sd    = document.getElementById('sd-' + i);
     if (inner && sw && sd) {
-      sw.style.height = h + 'px';
-      sd.style.height = (h * 5) + 'px';
+      inner.style.height = h + 'px';
+      sw.style.height    = h + 'px';
+      sd.style.height    = (h * 5) + 'px';
     }
   }
 }
