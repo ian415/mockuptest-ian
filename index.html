@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>SF Lab — Metaverse Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* =============================================
+   RESET
+============================================= */
+*, *::before, *::after {
+  margin: 0; padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Graphik', 'Plus Jakarta Sans', -apple-system, system-ui, sans-serif;
+}
+
+/* =============================================
+   PROTO CONTAINER — 9:16, scales to screen
+============================================= */
+#proto {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  /* dimensions set by JS */
+}
+
+/* =============================================
+   PAGES — absolute stacked, fade
+============================================= */
+.page {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow: hidden;
+}
+.page.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* =============================================
+   BACK BUTTON — left edge, vertically centered
+============================================= */
+.back-btn {
+  position: absolute;
+  left: 0.875em;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  width: 2.75em;
+  height: 2.75em;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.18);
+  transition: background 0.15s, transform 0.12s;
+}
+.back-btn:active {
+  background: rgba(255,255,255,0.25);
+  transform: translateY(-50%) scale(0.94);
+}
+.back-btn svg {
+  width: 1.1em;
+  height: 1.1em;
+  display: block;
+}
+.back-btn.dark {
+  background: rgba(0,0,0,0.07);
+  border-color: rgba(0,0,0,0.10);
+}
+.back-btn.dark:active {
+  background: rgba(0,0,0,0.14);
+}
+
+/* =============================================
+   FADE OVERLAY
+============================================= */
+#fade-overlay {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+  transition: opacity 0.35s ease;
+}
+#fade-overlay.in  { opacity: 1; }
+#fade-overlay.out { opacity: 0; }
+
+/* =============================================
+   PAGE 1 — IDLE
+============================================= */
+#page-idle {
+  cursor: pointer;
+  background: #000;
+}
+#page-idle video {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.idle-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.35) 0%,
+    transparent 28%,
+    transparent 55%,
+    rgba(0,0,0,0.72) 100%
+  );
+}
+.idle-top-label {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.72em;
+  white-space: nowrap;
+}
+.idle-bottom {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 0 8% 10%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.6em;
+}
+.idle-tagline {
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  font-size: 2em;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+.tap-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6em;
+  animation: float 2.4s ease-in-out infinite;
+}
+.tap-label {
+  font-weight: 400;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.68em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.tap-ring {
+  width: 2.8em;
+  height: 2.8em;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tap-ring::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  animation: ripple 2.4s ease-out infinite;
+}
+.tap-dot {
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.7);
+}
+@keyframes ripple {
+  0%   { transform: scale(0.85); opacity: 0.8; }
+  100% { transform: scale(1.5);  opacity: 0;   }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0);    }
+  50%       { transform: translateY(-5px); }
+}
+
+/* =============================================
+   PAGE 2 — MISSIONS  (no-scroll, fits in frame)
+============================================= */
+#page-missions {
+  background: #fff;
+}
+/* full-height flex column — NO scroll */
+.missions-inner {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* dark hero header — minimal */
+.missions-header {
+  background: #0a0a0a;
+  padding: 3% 7% 2.5%;
+  flex-shrink: 0;
+}
+.missions-header-top-label {
+  font-weight: 400;
+  color: rgba(255,255,255,0.4);
+  font-size: 0.56em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 0.35em;
+}
+.missions-header h1 {
+  font-weight: 600;
+  color: #fff;
+  font-size: 1.6em;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+/* card grid — compact */
+.missions-body {
+  padding: 2% 5% 1.5%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 2%;
+  flex-shrink: 0;
+}
+.card {
+  background: #f2f2f2;
+  border-radius: 0.85em;
+  padding: 3.5% 5%;
+}
+.card-row {
+  display: flex;
+  gap: 3%;
+}
+.card-row .card { flex: 1; }
+.card-eyebrow {
+  font-weight: 400;
+  color: #aaa;
+  font-size: 0.58em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.35em;
+}
+.card-title {
+  font-weight: 600;
+  color: #0a0a0a;
+  font-size: 0.82em;
+  line-height: 1.25;
+}
+
+/* team section — grows to fill remaining height */
+.team-section {
+  flex: 1;
+  padding: 1.5% 5% 2.5%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.section-eyebrow {
+  font-weight: 400;
+  color: #aaa;
+  font-size: 0.58em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 1.5%;
+  flex-shrink: 0;
+}
+
+/* member ID card — flex: 1 so all 3 share space evenly */
+.member-card {
+  background: #f2f2f2;
+  border-radius: 0.85em;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 3.5%;
+  padding: 0 4%;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease;
+  overflow: hidden;
+  position: relative;
+}
+.member-card + .member-card { margin-top: 2%; }
+.member-card:active {
+  background: #e6e6e6;
+  transform: scale(0.98);
+}
+.member-vid-wrap {
+  flex-shrink: 0;
+  border-radius: 0.6em;
+  overflow: hidden;
+  background: #d0d0d0;
+  position: relative;
+}
+.member-vid-wrap video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.member-info { flex: 1; min-width: 0; }
+.member-name {
+  font-weight: 600;
+  color: #0a0a0a;
+  font-size: 0.85em;
+  line-height: 1.2;
+}
+.member-role {
+  font-weight: 400;
+  color: #888;
+  font-size: 0.68em;
+  margin-top: 0.2em;
+}
+.member-desc {
+  font-weight: 400;
+  color: #999;
+  font-size: 0.64em;
+  line-height: 1.4;
+  margin-top: 0.35em;
+}
+.member-chevron {
+  flex-shrink: 0;
+  width: 1.5em; height: 1.5em;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+.member-chevron svg {
+  width: 0.65em; height: 0.65em;
+  display: block;
+}
+
+/* =============================================
+   PERSON VIDEO PAGES
+============================================= */
+.person-page { background: #000; }
+.person-page .main-video {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+/* gradient over video for button legibility */
+.person-grad {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 60%,
+    rgba(0,0,0,0.55) 100%
+  );
+  pointer-events: none;
+}
+
+.learn-more-btn {
+  position: absolute;
+  top: 50%;
+  right: 7%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.94);
+  color: #0a0a0a;
+  font-family: 'Graphik', 'Plus Jakarta Sans', -apple-system, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.42em;
+  border: none;
+  border-radius: 100px;
+  padding: 0.7em 1.3em;
+  cursor: pointer;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  letter-spacing: 0.01em;
+  box-shadow: 0 3px 16px rgba(0,0,0,0.3);
+}
+.learn-more-btn.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+.learn-more-btn:active {
+  transform: translateY(-50%) scale(0.94);
+}
+.learn-more-btn svg {
+  width: 1em; height: 1em; display: block;
+}
+
+/* =============================================
+   SUB PAGES — scroll scrub
+============================================= */
+.sub-page { background: #000; }
+.sub-inner {
+  position: absolute;
+  inset: 0;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.sub-inner::-webkit-scrollbar { display: none; }
+.scroll-driver { position: relative; }
+.sticky-wrap {
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+}
+.sticky-wrap video {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* scroll hint */
+.scroll-hint {
+  position: absolute;
+  bottom: 9%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  z-index: 10;
+  animation: float 2.4s ease-in-out infinite;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+.scroll-hint-text {
+  font-weight: 400;
+  color: rgba(255,255,255,0.55);
+  font-size: 0.62em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.scroll-hint svg {
+  width: 1.2em; height: 1.2em;
+  color: rgba(255,255,255,0.55);
+  display: block;
+}
+
+/* progress track at bottom edge */
+.scrub-progress {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 2px;
+  background: rgba(255,255,255,0.85);
+  width: 0%;
+  z-index: 20;
+  pointer-events: none;
+  transition: width 0.05s linear;
+}
+
+/* =============================================
+   VIDEO LOADING INDICATOR
+============================================= */
+.video-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.video-loading.show { opacity: 1; }
+.spinner {
+  width: 2.2em; height: 2.2em;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: rgba(255,255,255,0.8);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     PROTO CONTAINER
+════════════════════════════════════════ -->
+<div id="proto">
+
+  <!-- White fade overlay (sits above everything) -->
+  <div id="fade-overlay"></div>
+
+  <!-- ════════════════════════════════════
+       PAGE 1 · IDLE
+  ════════════════════════════════════ -->
+  <div class="page active" id="page-idle">
+    <video id="vid-homeloop" autoplay muted loop playsinline preload="auto"
+           src="homeloop.webm" type="video/webm"></video>
+    <div class="idle-gradient"></div>
+    <div class="idle-top-label">SF Lab · Metaverse Research</div>
+    <div class="idle-bottom">
+      <p class="idle-tagline">Where digital reality<br>meets human experience</p>
+      <div class="tap-indicator">
+        <span class="tap-label">Touch to enter</span>
+        <div class="tap-ring"><div class="tap-dot"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       PAGE 2 · MISSIONS
+  ════════════════════════════════════ -->
+  <div class="page" id="page-missions">
+    <!-- Scrollable content layer -->
+    <div class="missions-inner" id="missions-inner">
+      <div class="missions-header">
+        <p class="missions-header-top-label">San Francisco Laboratory</p>
+        <h1>Lab<br>Missions</h1>
+      </div>
+
+      <div class="missions-body">
+        <!-- Mission statement -->
+        <div class="card">
+          <p class="card-eyebrow">Mission Statement</p>
+          <p class="card-title">Bridging the physical and digital worlds through rigorous spatial science</p>
+        </div>
+
+        <!-- Key topic + experience row -->
+        <div class="card-row">
+          <div class="card">
+            <p class="card-eyebrow">Key Topic</p>
+            <p class="card-title">Spatial Computing &amp; Human Presence</p>
+          </div>
+          <div class="card">
+            <p class="card-eyebrow">Experience</p>
+            <p class="card-title">Interactive Digital Journey</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team section -->
+      <div class="team-section">
+        <p class="section-eyebrow">Meet the Team</p>
+
+        <!-- Member 1 -->
+        <div class="member-card" id="member-1" onclick="openPerson(1)">
+          <div class="member-vid-wrap" id="mvw-1">
+            <video autoplay muted loop playsinline preload="auto"
+                   src="head1.webm" type="video/webm"></video>
+          </div>
+          <div class="member-info">
+            <p class="member-name">Billy Bobby</p>
+            <p class="member-role">Metaverse Expert</p>
+            <p class="member-desc">Exploring consciousness within persistent virtual worlds and digital identity formation.</p>
+          </div>
+          <div class="member-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Member 2 -->
+        <div class="member-card" id="member-2" onclick="openPerson(2)">
+          <div class="member-vid-wrap" id="mvw-2">
+            <video autoplay muted loop playsinline preload="auto"
+                   src="head2.webm" type="video/webm"></video>
+          </div>
+          <div class="member-info">
+            <p class="member-name">Silly Sally</p>
+            <p class="member-role">Metaverse Operator</p>
+            <p class="member-desc">Designing and maintaining the infrastructure of next-generation virtual environments.</p>
+          </div>
+          <div class="member-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Member 3 -->
+        <div class="member-card" id="member-3" onclick="openPerson(3)">
+          <div class="member-vid-wrap" id="mvw-3">
+            <video autoplay muted loop playsinline preload="auto"
+                   src="head3.webm" type="video/webm"></video>
+          </div>
+          <div class="member-info">
+            <p class="member-name">Just Lars</p>
+            <p class="member-role">Metaverse Expert</p>
+            <p class="member-desc">Researching social dynamics and community building in shared virtual spaces.</p>
+          </div>
+          <div class="member-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div><!-- /missions-inner -->
+
+    <!-- Back button sits OUTSIDE the scroll area so it never scrolls away -->
+    <div class="back-btn dark" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       PERSON PAGE 1
+  ════════════════════════════════════ -->
+  <div class="page person-page" id="page-person-1">
+    <video class="main-video" id="vid-person-1" playsinline preload="auto"
+           src="person1test_compressed.webm"></video>
+    <div class="person-grad"></div>
+    <div class="video-loading" id="loading-1"><div class="spinner"></div></div>
+    <div class="back-btn" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <button class="learn-more-btn" id="lm-1" onclick="openSub(1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      Click here for more
+    </button>
+  </div>
+
+  <!-- PERSON PAGE 2 -->
+  <div class="page person-page" id="page-person-2">
+    <video class="main-video" id="vid-person-2" playsinline preload="auto"
+           src="person2test_compressed.webm"></video>
+    <div class="person-grad"></div>
+    <div class="video-loading" id="loading-2"><div class="spinner"></div></div>
+    <div class="back-btn" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <button class="learn-more-btn" id="lm-2" onclick="openSub(2)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      Click here for more
+    </button>
+  </div>
+
+  <!-- PERSON PAGE 3 -->
+  <div class="page person-page" id="page-person-3">
+    <video class="main-video" id="vid-person-3" playsinline preload="auto"
+           src="person3test.webm"></video>
+    <div class="person-grad"></div>
+    <div class="video-loading" id="loading-3"><div class="spinner"></div></div>
+    <div class="back-btn" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <button class="learn-more-btn" id="lm-3" onclick="openSub(3)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      Click here for more
+    </button>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SUB PAGE 1 — scroll scrub
+  ════════════════════════════════════ -->
+  <div class="page sub-page" id="page-sub-1">
+    <div class="sub-inner" id="sub-inner-1">
+      <div class="scroll-driver" id="sd-1">
+        <div class="sticky-wrap" id="sw-1">
+          <video id="vid-sub-1" playsinline preload="auto" muted
+                 src="sub1_1080p.webm"></video>
+        </div>
+      </div>
+    </div>
+    <!-- progress bar -->
+    <div class="scrub-progress" id="sp-1"></div>
+    <!-- back button outside scroll -->
+    <div class="back-btn" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <!-- scroll hint outside scroll -->
+    <div class="scroll-hint" id="sh-1">
+      <span class="scroll-hint-text">Scroll to explore</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- SUB PAGE 2 -->
+  <div class="page sub-page" id="page-sub-2">
+    <div class="sub-inner" id="sub-inner-2">
+      <div class="scroll-driver" id="sd-2">
+        <div class="sticky-wrap" id="sw-2">
+          <video id="vid-sub-2" playsinline preload="auto" muted
+                 src="sub2_1080p.webm"></video>
+        </div>
+      </div>
+    </div>
+    <div class="scrub-progress" id="sp-2"></div>
+    <div class="back-btn" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <div class="scroll-hint" id="sh-2">
+      <span class="scroll-hint-text">Scroll to explore</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- SUB PAGE 3 -->
+  <div class="page sub-page" id="page-sub-3">
+    <div class="sub-inner" id="sub-inner-3">
+      <div class="scroll-driver" id="sd-3">
+        <div class="sticky-wrap" id="sw-3">
+          <video id="vid-sub-3" playsinline preload="auto" muted
+                 src="sub3_1080p.webm"></video>
+        </div>
+      </div>
+    </div>
+    <div class="scrub-progress" id="sp-3"></div>
+    <div class="back-btn" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <div class="scroll-hint" id="sh-3">
+      <span class="scroll-hint-text">Scroll to explore</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+      </svg>
+    </div>
+  </div>
+
+</div><!-- /proto -->
+
+<script>
+/* ============================================================
+   PROTO SIZING — maintain 9:16, fill available screen
+============================================================ */
+const proto = document.getElementById('proto');
+const ASPECT = 9 / 16;
+
+function sizeProto() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let w, h;
+  if (vw / vh > ASPECT) {
+    h = vh; w = h * ASPECT;
+  } else {
+    w = vw; h = w / ASPECT;
+  }
+  proto.style.width  = w + 'px';
+  proto.style.height = h + 'px';
+  // Base font size — everything in em scales from here
+  proto.style.fontSize = (w / 390 * 16) + 'px';
+  // Resize member video wraps — set after layout so we can read card heights
+  requestAnimationFrame(() => {
+    const firstCard = document.getElementById('member-1');
+    const cardH = firstCard ? firstCard.offsetHeight : w * 0.17;
+    const vSize = Math.round(Math.min(cardH * 0.78, w * 0.18));
+    document.querySelectorAll('.member-vid-wrap').forEach(el => {
+      el.style.width  = vSize + 'px';
+      el.style.height = vSize + 'px';
+    });
+  });
+  // Resize scroll scrub geometry
+  for (let i = 1; i <= 3; i++) {
+    const inner = document.getElementById('sub-inner-' + i);
+    const sw    = document.getElementById('sw-' + i);
+    const sd    = document.getElementById('sd-' + i);
+    if (inner && sw && sd) {
+      sw.style.height = h + 'px';
+      sd.style.height = (h * 5) + 'px';
+    }
+  }
+}
+
+window.addEventListener('resize', sizeProto);
+// Initial size — also called after DOM ready
+sizeProto();
+
+/* ============================================================
+   PAGE NAVIGATION
+============================================================ */
+let pageStack = ['page-idle'];
+let currentPageId = 'page-idle';
+let inactivityTimer = null;
+const IDLE_TIMEOUT = 120_000;
+
+function getEl(id) { return document.getElementById(id); }
+
+function setActivePage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  getEl(id).classList.add('active');
+  currentPageId = id;
+}
+
+function fadeAndSwitch(callback) {
+  const overlay = getEl('fade-overlay');
+  overlay.style.transition = 'opacity 0.3s ease';
+  overlay.classList.add('in');
+  setTimeout(() => {
+    callback();
+    overlay.style.transition = 'opacity 0.45s ease';
+    overlay.classList.remove('in');
+  }, 320);
+}
+
+function navigateTo(id, withFade = false) {
+  if (id === currentPageId) return;
+  pageStack.push(id);
+  if (withFade) {
+    fadeAndSwitch(() => setActivePage(id));
+  } else {
+    setActivePage(id);
+  }
+  resetIdle();
+}
+
+function goBack() {
+  if (pageStack.length <= 1) return;
+  stopPersonVideos();
+  pageStack.pop();
+  const prev = pageStack[pageStack.length - 1];
+  // reset scroll positions when leaving
+  resetSubPageScroll(currentPageId);
+  if (currentPageId === 'page-missions') {
+    getEl('missions-inner').scrollTop = 0;
+  }
+  fadeAndSwitch(() => setActivePage(prev));
+  resetIdle();
+}
+
+function resetSubPageScroll(pageId) {
+  for (let i = 1; i <= 3; i++) {
+    if (pageId === 'page-sub-' + i) {
+      const inner = getEl('sub-inner-' + i);
+      if (inner) inner.scrollTop = 0;
+      // Reset video
+      const v = getEl('vid-sub-' + i);
+      if (v) { v.pause(); v.currentTime = 0; }
+      // Reset progress bar
+      const sp = getEl('sp-' + i);
+      if (sp) sp.style.width = '0%';
+      // Show scroll hint again
+      const sh = getEl('sh-' + i);
+      if (sh) sh.style.opacity = '1';
+    }
+  }
+}
+
+function stopPersonVideos() {
+  for (let i = 1; i <= 3; i++) {
+    const v = getEl('vid-person-' + i);
+    if (v) { v.pause(); v.currentTime = 0; }
+    const btn = getEl('lm-' + i);
+    if (btn) btn.classList.remove('visible');
+  }
+}
+
+/* ============================================================
+   IDLE PAGE — tap to enter
+============================================================ */
+getEl('page-idle').addEventListener('click', () => {
+  navigateTo('page-missions', true);
+});
+
+/* ============================================================
+   PERSON PAGES
+============================================================ */
+const lmTimers = {};
+
+function openPerson(n) {
+  // Grab video reference immediately (within gesture context)
+  const vid = getEl('vid-person-' + n);
+  const loader = getEl('loading-' + n);
+
+  // Attempt play immediately to stay within user-gesture context
+  if (vid) {
+    vid.currentTime = 0;
+    const playPromise = vid.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // autoplay blocked — try muted
+        vid.muted = true;
+        vid.play();
+      });
+    }
+  }
+
+  navigateTo('page-person-' + n, true);
+
+  // Loading indicator while video buffers
+  if (loader && vid) {
+    if (vid.readyState < 3) {
+      loader.classList.add('show');
+      vid.addEventListener('canplay', () => loader.classList.remove('show'), { once: true });
+    }
+  }
+
+  // Show "Click here for more" after 5 s
+  const btn = getEl('lm-' + n);
+  if (btn) btn.classList.remove('visible');
+  clearTimeout(lmTimers[n]);
+  lmTimers[n] = setTimeout(() => {
+    if (currentPageId === 'page-person-' + n) {
+      btn.classList.add('visible');
+    }
+  }, 5000);
+
+  // Also show on video timeupdate when halfway
+  if (vid) {
+    vid.addEventListener('timeupdate', function showMidway() {
+      if (vid.duration && vid.currentTime >= vid.duration * 0.5) {
+        btn.classList.add('visible');
+        vid.removeEventListener('timeupdate', showMidway);
+      }
+    });
+    // Show when video ends
+    vid.addEventListener('ended', () => btn.classList.add('visible'), { once: true });
+  }
+}
+
+/* ============================================================
+   SUB PAGES — scroll scrub
+============================================================ */
+function openSub(n) {
+  // Pause the person video that was playing before switching
+  const personVid = getEl('vid-person-' + n);
+  if (personVid) personVid.pause();
+
+  navigateTo('page-sub-' + n, true);
+
+  const vid = getEl('vid-sub-' + n);
+  if (vid) { vid.pause(); vid.currentTime = 0; }
+  const inner = getEl('sub-inner-' + n);
+  if (inner) inner.scrollTop = 0;
+  const sp = getEl('sp-' + n);
+  if (sp) sp.style.width = '0%';
+  const sh = getEl('sh-' + n);
+  if (sh) sh.style.opacity = '1';
+}
+
+// Attach scroll scrub with seek-queue pattern for smooth, lag-free scrubbing
+for (let i = 1; i <= 3; i++) {
+  (function(n) {
+    const inner = getEl('sub-inner-' + n);
+    const vid   = getEl('vid-sub-' + n);
+    const sp    = getEl('sp-' + n);
+    const sh    = getEl('sh-' + n);
+    if (!inner || !vid) return;
+
+    // Seek-queue: only one seek at a time, queue the latest target
+    let pendingTime = null;   // time to seek to after current seek finishes
+    let isSeeking   = false;
+    let rafId       = null;
+    let lastScroll  = 0;
+    let hintHidden  = false;
+
+    function applySeek(t) {
+      vid.currentTime = t;
+      isSeeking = true;
+    }
+
+    vid.addEventListener('seeked', function() {
+      isSeeking = false;
+      if (pendingTime !== null) {
+        const t = pendingTime;
+        pendingTime = null;
+        applySeek(t);
+      }
+    });
+
+    inner.addEventListener('scroll', function() {
+      lastScroll = inner.scrollTop;
+
+      if (!hintHidden && lastScroll > 2) {
+        hintHidden = true;
+        if (sh) sh.style.opacity = '0';
+      }
+
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const maxScroll = inner.scrollHeight - inner.clientHeight;
+        if (maxScroll <= 0 || !vid.duration) return;
+
+        const progress = Math.min(1, Math.max(0, lastScroll / maxScroll));
+        const targetTime = progress * vid.duration;
+
+        if (!isSeeking) {
+          applySeek(targetTime);
+        } else {
+          pendingTime = targetTime; // apply after current seek completes
+        }
+
+        if (sp) sp.style.width = (progress * 100) + '%';
+      });
+    }, { passive: true });
+  })(i);
+}
+
+/* ============================================================
+   INACTIVITY — 120s idle → return to homepage
+============================================================ */
+function resetIdle() {
+  clearTimeout(inactivityTimer);
+  if (currentPageId === 'page-idle') return;
+  inactivityTimer = setTimeout(returnToIdle, IDLE_TIMEOUT);
+}
+
+function returnToIdle() {
+  stopPersonVideos();
+  for (let i = 1; i <= 3; i++) resetSubPageScroll('page-sub-' + i);
+  getEl('missions-inner').scrollTop = 0;
+  pageStack = ['page-idle'];
+  fadeAndSwitch(() => setActivePage('page-idle'));
+}
+
+// Track any interaction
+['click','touchstart','touchmove','mousemove','keydown','scroll'].forEach(evt => {
+  proto.addEventListener(evt, resetIdle, { passive: true });
+});
+resetIdle();
+
+/* ============================================================
+   PRELOAD — trigger browser to buffer all videos
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  sizeProto();
+  document.querySelectorAll('video').forEach(v => v.load());
+});
+window.addEventListener('load', sizeProto);
+</script>
+</body>
+</html>
