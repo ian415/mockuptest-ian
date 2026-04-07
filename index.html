@@ -49,10 +49,12 @@ html, body {
   pointer-events: none;
   transition: opacity 0.35s ease;
   overflow: hidden;
+  z-index: 0;
 }
 .page.active {
   opacity: 1;
   pointer-events: all;
+  z-index: 10;
 }
 /* Sub pages: let inner div own the scroll — don't clip it */
 .sub-page {
@@ -75,14 +77,14 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  background: rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.45);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.22);
   transition: background 0.15s, transform 0.12s;
 }
 .back-btn:active {
-  background: rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.6);
   transform: translateY(-50%) scale(0.94);
 }
 .back-btn svg {
@@ -91,11 +93,11 @@ html, body {
   display: block;
 }
 .back-btn.dark {
-  background: rgba(0,0,0,0.07);
-  border-color: rgba(0,0,0,0.10);
+  background: rgba(0,0,0,0.12);
+  border-color: rgba(0,0,0,0.15);
 }
 .back-btn.dark:active {
-  background: rgba(0,0,0,0.14);
+  background: rgba(0,0,0,0.22);
 }
 
 /* =============================================
@@ -380,6 +382,47 @@ html, body {
   object-fit: cover;
 }
 
+/* ── ui controls: double-tap to show, auto-hide after 1s ── */
+.ui-ctrl {
+  transition: opacity 0.35s ease, background 0.15s, transform 0.12s;
+}
+.ui-ctrl.ctrl-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+/* allow normal taps on person pages */
+.person-page { touch-action: auto; }
+
+/* play / pause button — mirrors back button style, center of screen */
+.play-pause-btn {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  width: 2.75em;
+  height: 2.75em;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.22);
+}
+.play-pause-btn:active {
+  background: rgba(0,0,0,0.6);
+  transform: translate(-50%, -50%) scale(0.94);
+}
+.play-pause-btn svg { width: 1.1em; height: 1.1em; display: block; }
+/* show pause icon when playing, play icon when paused */
+.play-pause-btn .icon-play  { display: none; }
+.play-pause-btn .icon-pause { display: block; }
+.play-pause-btn.paused .icon-play  { display: block; }
+.play-pause-btn.paused .icon-pause { display: none; }
+
 /* gradient over video for button legibility */
 .person-grad {
   position: absolute;
@@ -439,8 +482,10 @@ html, body {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   scrollbar-width: none;
-  /* explicit height so iOS recognises scroll container */
   height: 100%;
+  /* own compositing layer — fixes iOS scroll inside overflow:hidden parent */
+  transform: translateZ(0);
+  will-change: scroll-position;
 }
 .sub-inner::-webkit-scrollbar { display: none; }
 .scroll-driver { position: relative; }
@@ -559,7 +604,7 @@ html, body {
     <div class="missions-inner" id="missions-inner">
       <div class="missions-header">
         <p class="missions-header-top-label">San Francisco Laboratory</p>
-        <h1>Lab<br>Missions</h1>
+        <h1>Lab Missions</h1>
       </div>
 
       <div class="missions-body">
@@ -662,10 +707,18 @@ html, body {
            src="person1test_compressed.webm"></video>
     <div class="person-grad"></div>
     <div class="video-loading" id="loading-1"><div class="spinner"></div></div>
-    <div class="back-btn" onclick="goBack()">
+    <div class="back-btn ui-ctrl" onclick="goBack()">
       <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
            stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <div class="play-pause-btn ui-ctrl" id="pp-1" onclick="togglePlay(1)">
+      <svg class="icon-pause" viewBox="0 0 24 24" fill="white">
+        <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+      </svg>
+      <svg class="icon-play" viewBox="0 0 24 24" fill="white">
+        <polygon points="6,3 20,12 6,21"/>
       </svg>
     </div>
     <button class="learn-more-btn" id="lm-1" onclick="openSub(1)">
@@ -685,10 +738,18 @@ html, body {
            src="person2test_compressed.webm"></video>
     <div class="person-grad"></div>
     <div class="video-loading" id="loading-2"><div class="spinner"></div></div>
-    <div class="back-btn" onclick="goBack()">
+    <div class="back-btn ui-ctrl" onclick="goBack()">
       <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
            stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <div class="play-pause-btn ui-ctrl" id="pp-2" onclick="togglePlay(2)">
+      <svg class="icon-pause" viewBox="0 0 24 24" fill="white">
+        <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+      </svg>
+      <svg class="icon-play" viewBox="0 0 24 24" fill="white">
+        <polygon points="6,3 20,12 6,21"/>
       </svg>
     </div>
     <button class="learn-more-btn" id="lm-2" onclick="openSub(2)">
@@ -708,10 +769,18 @@ html, body {
            src="person3test.webm"></video>
     <div class="person-grad"></div>
     <div class="video-loading" id="loading-3"><div class="spinner"></div></div>
-    <div class="back-btn" onclick="goBack()">
+    <div class="back-btn ui-ctrl" onclick="goBack()">
       <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
            stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <div class="play-pause-btn ui-ctrl" id="pp-3" onclick="togglePlay(3)">
+      <svg class="icon-pause" viewBox="0 0 24 24" fill="white">
+        <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+      </svg>
+      <svg class="icon-play" viewBox="0 0 24 24" fill="white">
+        <polygon points="6,3 20,12 6,21"/>
       </svg>
     </div>
     <button class="learn-more-btn" id="lm-3" onclick="openSub(3)">
@@ -897,15 +966,25 @@ function navigateTo(id, withFade = false) {
 
 function goBack() {
   if (pageStack.length <= 1) return;
+  const leavingPage = currentPageId;
   stopPersonVideos();
   pageStack.pop();
   const prev = pageStack[pageStack.length - 1];
-  // reset scroll positions when leaving
   resetSubPageScroll(currentPageId);
   if (currentPageId === 'page-missions') {
     getEl('missions-inner').scrollTop = 0;
   }
-  fadeAndSwitch(() => setActivePage(prev));
+  fadeAndSwitch(() => {
+    setActivePage(prev);
+    // Returning to a person page: ensure video is paused at start, show controls
+    for (let i = 1; i <= 3; i++) {
+      if (prev === 'page-person-' + i) {
+        const pp = getEl('pp-' + i);
+        if (pp) pp.classList.add('paused');
+        showControls('page-person-' + i);
+      }
+    }
+  });
   resetIdle();
 }
 
@@ -944,14 +1023,76 @@ getEl('page-idle').addEventListener('click', () => {
 });
 
 /* ============================================================
-   PERSON PAGES
+   UI CONTROLS — double-tap to show, auto-hide after 1s
 ============================================================ */
-const lmTimers = {};
+const lmTimers   = {};
+const ctrlTimers = {};
+
+function showControls(pageId) {
+  document.querySelectorAll('#' + pageId + ' .ui-ctrl').forEach(el => {
+    el.classList.remove('ctrl-hidden');
+  });
+  clearTimeout(ctrlTimers[pageId]);
+  ctrlTimers[pageId] = setTimeout(() => {
+    document.querySelectorAll('#' + pageId + ' .ui-ctrl').forEach(el => {
+      el.classList.add('ctrl-hidden');
+    });
+  }, 1000);
+}
+
+// Double-tap detection — capture phase ensures child elements don't swallow events
+// scroll movements on sub pages won't trigger it (moved flag)
+function addDoubleTap(el, callback) {
+  let lastTap = 0;
+  let moved   = false;
+  // capture:true = intercept before children handle the event
+  el.addEventListener('touchstart', () => { moved = false; }, { passive: true, capture: true });
+  el.addEventListener('touchmove',  () => { moved = true;  }, { passive: true, capture: true });
+  el.addEventListener('touchend', () => {
+    if (moved) return;
+    const now = Date.now();
+    if (now - lastTap < 350) { callback(); lastTap = 0; }
+    else { lastTap = now; }
+  }, { passive: true, capture: true });
+}
+
+// Person pages: single tap shows controls
+// Sub pages: double-tap shows controls (scroll must not trigger it)
+for (let i = 1; i <= 3; i++) {
+  (function(n) {
+    // touchstart for instant response; click as fallback for non-touch
+    getEl('page-person-' + n).addEventListener('touchstart', () => {
+      showControls('page-person-' + n);
+    }, { passive: true, capture: true });
+    getEl('page-person-' + n).addEventListener('click', () => {
+      showControls('page-person-' + n);
+    });
+    addDoubleTap(getEl('page-sub-' + n), () => showControls('page-sub-' + n));
+
+    // When video ends, flip button to play icon
+    getEl('vid-person-' + n).addEventListener('ended', () => {
+      const btn = getEl('pp-' + n);
+      if (btn) btn.classList.add('paused');
+    });
+  })(i);
+}
+
+function togglePlay(n) {
+  const vid = getEl('vid-person-' + n);
+  const btn = getEl('pp-' + n);
+  if (!vid || !btn) return;
+  if (vid.paused) { vid.play();  btn.classList.remove('paused'); }
+  else            { vid.pause(); btn.classList.add('paused');    }
+  showControls('page-person-' + n);
+}
 
 function openPerson(n) {
-  // Grab video reference immediately (within gesture context)
-  const vid = getEl('vid-person-' + n);
+  const vid    = getEl('vid-person-' + n);
   const loader = getEl('loading-' + n);
+  const pp     = getEl('pp-' + n);
+
+  // Reset play/pause button to playing state
+  if (pp) pp.classList.remove('paused');
 
   // Attempt play immediately to stay within user-gesture context
   if (vid) {
@@ -959,7 +1100,6 @@ function openPerson(n) {
     const playPromise = vid.play();
     if (playPromise !== undefined) {
       playPromise.catch(() => {
-        // autoplay blocked — try muted
         vid.muted = true;
         vid.play();
       });
@@ -967,6 +1107,9 @@ function openPerson(n) {
   }
 
   navigateTo('page-person-' + n, true);
+
+  // Show controls briefly on entry, then auto-hide
+  showControls('page-person-' + n);
 
   // Loading indicator while video buffers
   if (loader && vid) {
@@ -976,17 +1119,15 @@ function openPerson(n) {
     }
   }
 
-  // Show "Click here for more" after 5 s
+  // Show "Click here for more" after 5s
   const btn = getEl('lm-' + n);
   if (btn) btn.classList.remove('visible');
   clearTimeout(lmTimers[n]);
   lmTimers[n] = setTimeout(() => {
-    if (currentPageId === 'page-person-' + n) {
-      btn.classList.add('visible');
-    }
+    if (currentPageId === 'page-person-' + n) btn.classList.add('visible');
   }, 5000);
 
-  // Also show on video timeupdate when halfway
+  // Also show at video halfway
   if (vid) {
     vid.addEventListener('timeupdate', function showMidway() {
       if (vid.duration && vid.currentTime >= vid.duration * 0.5) {
@@ -994,8 +1135,13 @@ function openPerson(n) {
         vid.removeEventListener('timeupdate', showMidway);
       }
     });
-    // Show when video ends
-    vid.addEventListener('ended', () => btn.classList.add('visible'), { once: true });
+    // When video ends: show learn-more, then auto-return to previous page after 2s
+    vid.addEventListener('ended', () => {
+      btn.classList.add('visible');
+      setTimeout(() => {
+        if (currentPageId === 'page-person-' + n) goBack();
+      }, 2000);
+    }, { once: true });
   }
 }
 
